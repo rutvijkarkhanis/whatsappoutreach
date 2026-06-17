@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WhatsApp Outreach</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+
+  <!-- UX IMPROVEMENTS (self-contained, additive styles) -->
+  <style>
+    /* Make the sidebar a vertical flex column so we can pin a footer at the bottom */
+    .sidebar { display: flex; flex-direction: column; }
+    .sidebar-tab-content { flex: 1 1 auto; overflow-y: auto; }
+
+    /* Persistent footer that holds Start Campaign on EVERY tab */
+    .sidebar-footer {
+      flex: 0 0 auto;
+      padding: 12px 14px 14px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      background: rgba(0,0,0,0.18);
+    }
+    .start-hint {
+      font-size: 11px;
+      color: var(--text-muted, #8b8b9a);
+      text-align: center;
+      margin-top: 8px;
+      line-height: 1.4;
+    }
+
+    /* Numbered step badges on the tabs */
+    .tab-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 17px; height: 17px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.12);
+      font-size: 10px; font-weight: 700;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+    .sidebar-tab.active .tab-num {
+      background: var(--accent, #25d366);
+      color: #07140c;
+    }
+
+    /* "How it works" helper strip at the top of the main panel */
+    .howto-bar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      padding: 10px 14px;
+      margin-bottom: 12px;
+      background: rgba(37,211,102,0.08);
+      border: 1px solid rgba(37,211,102,0.28);
+      border-radius: 10px;
+      font-size: 12px;
+      color: var(--text, #e6e6ee);
+    }
+    .howto-bar .howto-title {
+      font-weight: 700;
+      color: var(--accent, #25d366);
+      margin-right: 4px;
+    }
+    .howto-step { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+    .howto-step .n {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 16px; height: 16px; border-radius: 50%;
+      background: var(--accent, #25d366); color: #07140c;
+      font-size: 10px; font-weight: 700;
+    }
+    .howto-sep { color: var(--text-muted, #8b8b9a); }
+  </style>
+</head>
+<body>
+
+  <!-- TITLEBAR -->
+  <div class="titlebar">
+    <div class="titlebar-left">
+      <div class="titlebar-logo">W</div>
+      <span class="titlebar-title">WhatsApp Outreach</span>
+      <span class="titlebar-badge">Human-Assisted</span>
+    </div>
+    <div class="row" style="-webkit-app-region: no-drag; gap: 8px;">
+      <button class="btn btn-ghost btn-sm" id="btnOpenLogs">📁 Logs</button>
+      <button class="btn btn-ghost btn-sm" id="btnImport">📥 Import</button>
+      <button class="btn btn-ghost btn-sm" id="btnExport">📤 Export</button>
+    </div>
+  </div>
+
+  <!-- APP LAYOUT -->
+  <div class="app-layout">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-tabs">
+        <button class="sidebar-tab active" data-tab="setup"><span class="tab-num">1</span>Setup</button>
+        <button class="sidebar-tab" data-tab="message"><span class="tab-num">2</span>Message</button>
+        <button class="sidebar-tab" data-tab="media"><span class="tab-num">3</span>Media</button>
+      </div>
+
+      <div class="sidebar-tab-content">
+
+        <!-- SETUP TAB -->
+        <div class="sidebar-tab-pane active" id="tab-setup">
+
+          <!-- CSV UPLOAD -->
+          <div class="form-group">
+            <label class="form-label">CSV Contacts</label>
+            <div class="upload-zone" id="csvZone">
+              <div class="upload-zone-icon">📋</div>
+              <div class="upload-zone-label">Click to upload CSV</div>
+              <div class="upload-zone-sub">Columns needed: phone, name</div>
+            </div>
+            <div class="form-hint" id="csvHint"></div>
+            <div class="form-hint" style="margin-top:6px;">
+              💡 Tip: Make a spreadsheet with a <b>phone</b> column and a <b>name</b> column, then
+              "Save As" → CSV. Include the country code in the phone (e.g. 919168833977).
+            </div>
+          </div>
+
+          <!-- CONTACTS SEARCH -->
+          <div class="form-group" id="contactSearchGroup" style="display:none;">
+            <div class="search-bar">
+              <span style="color:var(--text-muted);">🔍</span>
+              <input type="text" id="contactSearch" placeholder="Search contacts..." />
+            </div>
+          </div>
+
+          <!-- DELAY -->
+          <div class="form-group">
+            <label class="form-label">Delay Between Contacts (sec)</label>
+            <div class="delay-row">
+              <div class="form-group">
+                <label class="form-label" style="font-size:9px;">MIN</label>
+                <input class="inline-number" type="number" id="delayMin" value="5" min="1" max="300" />
+              </div>
+              <div class="form-group">
+                <label class="form-label" style="font-size:9px;">MAX</label>
+                <input class="inline-number" type="number" id="delayMax" value="15" min="1" max="300" />
+              </div>
+            </div>
+          </div>
+
+          <!-- DUPLICATE INFO -->
+          <div id="duplicateInfo" style="display:none;">
+            <div class="badge badge-warn" id="duplicateBadge"></div>
+          </div>
+
+          <!-- SKIP HINT -->
+          <div id="skipHint" style="display:none; font-size:11px; color:var(--text-muted); margin-bottom:8px;">
+            💡 Click any row in the Contact Queue to pre-skip before starting
+          </div>
+        </div>
+
+        <!-- MESSAGE TAB -->
+        <div class="sidebar-tab-pane" id="tab-message">
+          <div class="form-group">
+            <label class="form-label">Message Template</label>
+            <textarea class="form-textarea" id="messageTemplate" rows="6"
+              placeholder="Hi {{name}}, inviting you to KC Design Connect 2026!&#10;&#10;Use {{name}}, {{phone}} as variables.">Hi {{name}}, inviting you to KC Design Connect 2026!</textarea>
+            <div class="form-hint">Variables: <code style="color:var(--accent);">{{name}}</code>, <code style="color:var(--accent);">{{phone}}</code>, and any CSV column</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Preview (sample contact)</label>
+            <div class="preview-phone-mock" id="msgPreview">Hi John, inviting you to KC Design Connect 2026!</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Preview Contact Name</label>
+            <input class="form-input" type="text" id="previewName" value="John" placeholder="Enter a name to preview" />
+          </div>
+        </div>
+
+        <!-- MEDIA TAB -->
+        <div class="sidebar-tab-pane" id="tab-media">
+          <div class="form-group">
+            <label class="form-label">Image (optional)</label>
+            <div class="upload-zone" id="imageZone">
+              <div class="upload-zone-icon">🖼️</div>
+              <div class="upload-zone-label">Click to upload image</div>
+              <div class="upload-zone-sub">JPG, PNG, GIF, WebP</div>
+            </div>
+            <button class="btn btn-ghost btn-sm mt-4" id="btnClearImage" style="display:none;">✕ Remove image</button>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Video (optional)</label>
+            <div class="upload-zone" id="videoZone">
+              <div class="upload-zone-icon">🎬</div>
+              <div class="upload-zone-label">Click to upload video</div>
+              <div class="upload-zone-sub">MP4, MOV, 3GP</div>
+            </div>
+            <button class="btn btn-ghost btn-sm mt-4" id="btnClearVideo" style="display:none;">✕ Remove video</button>
+          </div>
+
+          <div class="form-hint" style="margin-top:4px;">
+            The text message is sent first, then the image/video as a separate message. You manually click Send for each.
+          </div>
+        </div>
+
+      </div>
+
+      <!-- PERSISTENT FOOTER: Start Campaign is visible on EVERY tab -->
+      <div class="sidebar-footer">
+        <button class="btn btn-primary btn-full btn-lg" id="btnStart" disabled>
+          ▶ Start Campaign
+        </button>
+        <div class="start-hint" id="startHint">
+          Upload a CSV on the <b>Setup</b> tab to enable
+        </div>
+        <div class="disclaimer" style="margin-top:10px;">
+          ⚠ This tool is intended only for consent-based human-assisted outreach and must comply with WhatsApp's Terms of Service.
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+
+      <!-- HOW IT WORKS -->
+      <div class="howto-bar">
+        <span class="howto-title">How it works:</span>
+        <span class="howto-step"><span class="n">1</span> Upload CSV</span>
+        <span class="howto-sep">›</span>
+        <span class="howto-step"><span class="n">2</span> Write message</span>
+        <span class="howto-sep">›</span>
+        <span class="howto-step"><span class="n">3</span> Add image/video (optional)</span>
+        <span class="howto-sep">›</span>
+        <span class="howto-step"><span class="n">4</span> Start Campaign</span>
+        <span class="howto-sep">›</span>
+        <span class="howto-step"><span class="n">5</span> Scan the QR code once</span>
+        <span class="howto-sep">›</span>
+        <span class="howto-step"><span class="n">6</span> Click Send in WhatsApp for each contact</span>
+      </div>
+
+      <!-- STATS BAR -->
+      <div class="stats-bar">
+        <div class="stat-cell">
+          <div class="stat-label">Total</div>
+          <div class="stat-value" id="statTotal">0</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label">Current</div>
+          <div class="stat-value" id="statCurrent">—</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label">Sent</div>
+          <div class="stat-value green" id="statSent">0</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label">Remaining</div>
+          <div class="stat-value" id="statRemaining">0</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label">Failed / Skipped</div>
+          <div class="stat-value warn" id="statFailed">0</div>
+        </div>
+      </div>
+
+      <!-- PROGRESS -->
+      <div class="progress-bar-wrap">
+        <div class="progress-info">
+          <span class="progress-label" id="progressLabel">No campaign running</span>
+          <span class="progress-pct" id="progressPct">0%</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <!-- CURRENT CONTACT CARD -->
+      <div class="contact-card" id="contactCard" style="display:none;">
+        <div class="contact-avatar" id="contactAvatar">—</div>
+        <div class="contact-info">
+          <div class="contact-name" id="contactName">—</div>
+          <div class="contact-phone" id="contactPhone">—</div>
+        </div>
+        <div class="contact-status status-idle" id="contactStatusBadge">Idle</div>
+      </div>
+
+      <!-- SEND PROMPT -->
+      <div class="send-prompt hidden" id="sendPrompt">
+        <div class="send-prompt-icon">⏳</div>
+        <div class="send-prompt-text">
+          <div class="send-prompt-title">Manual action required — Click Send in WhatsApp</div>
+          <div class="send-prompt-sub">Message and media are ready. Click Send in the WhatsApp window, then click "Next Contact" below.</div>
+        </div>
+        <button class="btn btn-primary btn-lg" id="btnNext">Next Contact ›</button>
+      </div>
+
+      <!-- ACTION ROW -->
+      <div class="action-row">
+        <button class="btn btn-secondary" id="btnPause" disabled>⏸ Pause</button>
+        <button class="btn btn-secondary" id="btnResume" disabled>▶ Resume</button>
+        <button class="btn btn-warn" id="btnSkip" disabled>⤼ Skip</button>
+        <button class="btn btn-blue" id="btnRetry" disabled>↺ Retry</button>
+        <button class="btn btn-danger" id="btnStop" disabled>■ Stop</button>
+        <div class="flex-1"></div>
+        <span id="campaignStatusBadge" class="badge badge-gray">IDLE</span>
+      </div>
+
+      <!-- TABS: Console / Contacts -->
+      <div class="main-tabs">
+        <button class="main-tab active" data-main-tab="console">Live Console</button>
+        <button class="main-tab" data-main-tab="contacts">Contact Queue</button>
+      </div>
+
+      <!-- CONSOLE -->
+      <div class="main-tab-content active" id="maintab-console">
+        <div class="log-wrap">
+          <div class="log-header">
+            <span class="log-title">Activity Log</span>
+            <button class="btn btn-ghost btn-sm" id="btnClearLog">Clear</button>
+          </div>
+          <div class="log-console" id="logConsole">
+            <div class="empty-state" id="logEmpty">
+              <div class="empty-icon">💬</div>
+              <div class="empty-title">No activity yet</div>
+              <div class="empty-sub">Start a campaign to see live logs</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONTACTS -->
+      <div class="main-tab-content" id="maintab-contacts">
+        <div class="contacts-table-wrap" id="contactsTableWrap">
+          <div class="empty-state" id="contactsEmpty">
+            <div class="empty-icon">📋</div>
+            <div class="empty-title">No contacts loaded</div>
+            <div class="empty-sub">Upload a CSV to see your contact queue</div>
+          </div>
+          <table class="contacts-table" id="contactsTable" style="display:none;">
+            <thead>
+              <tr>
+                <th></th>
+                <th>#</th>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="contactsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
