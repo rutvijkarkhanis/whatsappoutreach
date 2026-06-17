@@ -1,0 +1,51 @@
+{
+  "name": "whatsapp-outreach",
+  "version": "1.0.0",
+  "description": "Human-assisted WhatsApp outreach tool",
+  "main": "src/main/index.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux"
+  },
+  "dependencies": {
+    "csv-parse": "^5.5.6",
+    "puppeteer-core": "^22.0.0",
+    "winston": "^3.11.0"
+  },
+  "devDependencies": {
+    "electron": "^29.4.6",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.outreach.whatsapp",
+    "productName": "WhatsApp Outreach",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "uploads/.gitkeep",
+      "logs/.gitkeep"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "WhatsApp Outreach"
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  }
+}
